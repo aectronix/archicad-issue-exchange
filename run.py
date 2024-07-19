@@ -12,39 +12,35 @@ cmd = argparse.ArgumentParser()
 cmd.add_argument('-p', '--port', required=False, help='archicad port')
 arg = cmd.parse_args()
 
-# ac = ArchicadWrapper(arg.port)
-
-# export issues into the bcfzip
-
-# read them
-
 spk = SpeckleWrapper()
+stream = spk.client.stream.search('aeb487f0e6')[0]
 commit = spk.retrieve('aeb487f0e6', '784ad6fdb5')
-
 
 bcf = BCFWrapper('C:\\Users\\i.yurasov\\Desktop\\dev\\_tmp\\issues.bcfzip')
 issues = bcf.read()
-# # print (issues)
-# print(json.dumps(issues, indent = 4))
 for issue in issues:
-	print (issue)
+	selectedIds = []
+	for selectedId in issue['viewpoint']['selected']:
+		for i in range(0, len(commit['elements'])):
+			for e in commit['elements'][i]['elements']:
+				if e['applicationId'] == selectedId:
+					selectedIds.append(e['id'])
 
-# stream = spk.client.stream.search('aeb487f0e6')[0]
-# comment = spk.create_comment(
-# 	projectId='aeb487f0e6',
-# 	title = 'New Thread with VP',
-# 	modelId = '0425408de2',
-# 	cameraPosition = [
-# 		7.58733,
-# 		-33.643906,
-# 		2.632540
-# 	],
-# 	cameraTarget = [
-# 		0.892799,
-# 		32.236394,
-# 		0.133442
-# 	]
-# )
-
+	comment = spk.create_comment(
+		projectId='aeb487f0e6',
+		title = issue['markup']['Title'],
+		modelId = '0425408de2',
+		cameraPosition = [
+			issue['viewpoint']['camera_viewpoint']['x'],
+			issue['viewpoint']['camera_viewpoint']['y'],
+			issue['viewpoint']['camera_viewpoint']['z']
+		],
+		cameraTarget = [
+			issue['viewpoint']['camera_direction']['x'],
+			issue['viewpoint']['camera_direction']['y'],
+			issue['viewpoint']['camera_direction']['z']
+		],
+		selectedObjectIds = selectedIds
+	)
 
 print(f'\n{round(time.time() - ts, 2)} sec')
