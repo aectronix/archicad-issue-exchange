@@ -1,87 +1,12 @@
 from specklepy.api.client import SpeckleClient
 from specklepy.api.credentials import get_default_account
 from specklepy.api import operations
+from specklepy.transports.server import ServerTransport
+from specklepy.serialization.base_object_serializer import BaseObjectSerializer
 
 import json
 import requests
 from gql import gql
-
-JSON_OBJ = {
-  "projectId": "aeb487f0e6",
-  "viewer": {
-    "metadata": {
-      "filteringState": None
-    }
-  },
-  "ui": {
-    "diff": {
-      "mode": 1,
-      "time": 0.5,
-      "command": None
-    },
-    "camera": {
-      "zoom": 1,
-      "target": [
-        8.875,
-        6.924999833106995,
-        2.8249998092651367
-      ],
-      "position": [
-        33.53323452754469,
-        31.573644656081974,
-        27.49500210465433
-      ],
-      "isOrthoProjection": False
-    },
-    "filters": {
-      "propertyFilter": {
-        "key": None,
-        "isApplied": False
-      },
-      "hiddenObjectIds": [],
-      "isolatedObjectIds": [],
-      "selectedObjectIds": [
-        "23a1e73f40b01ff830dff4a3f5cd20bd"
-      ]
-    },
-    "threads": {
-      "openThread": {
-        "isTyping": True,
-        "threadId": None,
-        "newThreadEditor": True
-      }
-    },
-    "selection": [
-      13.8943768419011,
-      -2.0502114496201798,
-      8.125000002980233
-    ],
-    "sectionBox": None,
-    "lightConfig": {
-      "color": 16777215,
-      "radius": 0,
-      "azimuth": 0.75,
-      "enabled": True,
-      "elevation": 1.33,
-      "intensity": 5,
-      "castShadow": True,
-      "shadowcatcher": True,
-      "indirectLightIntensity": 1.2
-    },
-    "measurement": {
-      "enabled": False,
-      "options": {
-        "visible": True,
-        "type": 1,
-        "vertexSnap": True,
-        "units": "m",
-        "precision": 2
-      }
-    },
-    "explodeFactor": 0,
-    "spotlightUserSessionId": None
-  }
-}
 
 class SpeckleWrapper():
 
@@ -107,7 +32,8 @@ class SpeckleWrapper():
 		except Exception as e:
 			raise e
 
-	def speckle_graphql_query(self, query, variables):
+
+	def gql_query(self, query, variables):
 	    """
 	    Sends a GraphQL query to the Speckle server and returns the response.
 
@@ -125,6 +51,16 @@ class SpeckleWrapper():
 	    response = requests.post(url, json=payload, headers=headers)
 	    print (response.content)
 	    return response.json() if response.status_code == 200 else None
+
+	def retrieve(self, streamId, commitId):
+
+		commit = self.client.commit.get(streamId, commitId)
+		transport = ServerTransport(client=self.client, stream_id=streamId)
+		if transport:
+			self.transport = transport
+			result = operations.receive(commit.referencedObject, self.transport)
+
+		return result
 
 	def get_comments(self, stream):
 		query = gql(
@@ -146,10 +82,10 @@ class SpeckleWrapper():
 			}"""
 		)
 
-		data = self.speckle_graphql_query(query_str, variables)
+		data = self.gql_query(query_str, variables)
 		return data["data"] if data and "data" in data else None
 
-	def create_comment(self):
+	def create_comment(self, projectId, title, modelId, cameraPosition=[], cameraTarget=[], selectedObjectIds=[]):
 		query_str = '''
 			mutation Create($input: CreateCommentInput!) {
 			  commentMutations {
@@ -162,7 +98,7 @@ class SpeckleWrapper():
 
 		variables = {
 			  "input": {
-			    "projectId": "aeb487f0e6",
+			    "projectId": projectId,
 			    "content": {
 			      "doc": {
 			        "type": "doc",
@@ -172,106 +108,67 @@ class SpeckleWrapper():
 			            "content": [
 			              {
 			                "type": "text",
-			                "text": "Another try 4"
+			                "text": title
 			              }
 			            ],
 			          }
 			        ],
 			      }
 			    },
-			    "resourceIdString": "2de5096922@c433d9628f",
+			    "resourceIdString": modelId,
 
-	            "viewerState": {
-	              "projectId": "aeb487f0e6",
-	              "sessionId": xxxxxxxxxxxx
-	              "viewer": {
-	                "metadata": {
-	                  "filteringState": None
-	                }
-	              },
-	              "resources": {
-	                "request": {
-	                  "threadFilters": {
-	                    "includeArchived": False,
-	                    "loadedVersionsOnly": True
-	                  },
-	                  "resourceIdString": "2de5096922@c433d9628f"
-	                }
-	              },
-	              "ui": {
-	                "diff": {
-	                  "mode": 1,
-	                  "time": 0.5,
-	                  "command": None
-	                },
-	                "camera": {
-	                  "zoom": 1,
-	                  "target": [
-	                    8.875,
-	                    6.924999833106995,
-	                    2.8249998092651367
-	                  ],
-	                  "position": [
-	                    33.53323452754469,
-	                    31.573644656081974,
-	                    27.49500210465433
-	                  ],
-	                  "isOrthoProjection": False
-	                },
-	                "filters": {
-	                  "propertyFilter": {
-	                    "key": None,
-	                    "isApplied": False
-	                  },
-	                  "hiddenObjectIds": [],
-	                  "isolatedObjectIds": [],
-	                  "selectedObjectIds": [
-	                    "23a1e73f40b01ff830dff4a3f5cd20bd"
-	                  ]
-	                },
-	                "threads": {
-	                  "openThread": {
-	                    "isTyping": True,
-	                    "threadId": None,
-	                    "newThreadEditor": True
-	                  }
-	                },
-	                "selection": [
-	                  13.8943768419011,
-	                  -2.0502114496201798,
-	                  8.125000002980233
-	                ],
-	                "sectionBox": None,
-	                "lightConfig": {
-	                  "color": 16777215,
-	                  "radius": 0,
-	                  "azimuth": 0.75,
-	                  "enabled": True,
-	                  "elevation": 1.33,
-	                  "intensity": 5,
-	                  "castShadow": True,
-	                  "shadowcatcher": True,
-	                  "indirectLightIntensity": 1.2
-	                },
-	                "measurement": {
-	                  "enabled": False,
-	                  "options": {
-	                    "visible": True,
-	                    "type": 1,
-	                    "vertexSnap": True,
-	                    "units": "m",
-	                    "precision": 2
-	                  }
-	                },
-	                "explodeFactor": 0,
-	                "spotlightUserSessionId": None
-	              }
-	            }
+          "viewerState": {
+              "projectId": projectId,
+              "resources": {
+                  "request": {
+                      "resourceIdString": f"{modelId}",
+                      "threadFilters": {},
+                  }
+              },
+              "sessionId": "qwerty",
+              "ui": {
+                  "camera": {
+                      "isOrthoProjection": False,
+                      "position": cameraPosition,
+                      "target": cameraTarget,
+                      "zoom": 1,
+                  },
+                  "explodeFactor": 0,
+                  "filters": {
+                      "hiddenObjectIds": [],
+                      "isolatedObjectIds": [],
+                      "propertyFilter": {"isApplied": False, "key": None},
+                      "selectedObjectIds": selectedObjectIds,
+                  },
+                  "lightConfig": {
+                      "azimuth": 0.75,
+                      "castShadow": True,
+                      "color": 16777215,
+                      "elevation": 1.33,
+                      "enabled": True,
+                      "indirectLightIntensity": 1.2,
+                      "intensity": 5,
+                      "radius": 0,
+                      "shadowcatcher": True,
+                  },
+                  "sectionBox": None,
+                  "selection": [],
+                  "spotlightUserSessionId": None,
+                  "threads": {
+                      "openThread": {
+                          "isTyping": False,
+                          "newThreadEditor": True,
+                          "threadId": None,
+                      }
+                  },
+              },
+              "viewer": {"metadata": {"filteringState": {}}},
+          }
 
 			  }
 		}
 
-		data = self.speckle_graphql_query(query_str, variables)
+		data = self.gql_query(query_str, variables)
 		return data["data"] if data and "data" in data else None
 
 
