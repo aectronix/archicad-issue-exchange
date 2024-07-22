@@ -48,17 +48,32 @@ for issue in issues:
 			issue['viewpoint']['camera_direction']['z']
 		]
 
-	comment = spk.create_comment(
-		projectId='aeb487f0e6',
-		title = issue['markup']['Title'],
-		modelId = '0425408de2',
-		cameraPosition = [
-			issue['viewpoint']['camera_viewpoint']['x'],
-			issue['viewpoint']['camera_viewpoint']['y'],
-			issue['viewpoint']['camera_viewpoint']['z']
-		],
-		cameraTarget = cameraTarget,
-		selectedObjectIds = [s[1] for s in selectedIds]
-	)
+	# thread = spk.add_thread(
+	# 	projectId='aeb487f0e6',
+	# 	title = issue['markup']['Title'],
+	# 	modelId = '0425408de2',
+	# 	cameraPosition = [
+	# 		issue['viewpoint']['camera_viewpoint']['x'],
+	# 		issue['viewpoint']['camera_viewpoint']['y'],
+	# 		issue['viewpoint']['camera_viewpoint']['z']
+	# 	],
+	# 	cameraTarget = cameraTarget,
+	# 	selectedObjectIds = [s[1] for s in selectedIds]
+	# )
+
+	# print (f'Thread posted: {issue['markup']['Title']}')
+	# if issue['markup']['comments'] and thread:
+	# 	for comment in issue['markup']['comments']:
+	# 		spk.add_reply(
+	# 			thread['commentMutations']['create']['id'],
+	# 			comment['Comment']
+	# 		)
+	# 		print (f'Reply posted: {comment['Comment']}')
+
+
 
 print(f'\n{round(time.time() - ts, 2)} sec')
+
+# print (json.dumps (issue, indent = 4))
+
+# {'commentMutations': {'create': {'id': '5b94677229'}}}

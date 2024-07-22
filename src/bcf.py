@@ -25,8 +25,19 @@ class BCFWrapper():
 			'CreationAuthor': topic.find('CreationAuthor').text,
 			'Title': topic.find('Title').text,
 			'Priority': topic.find('Priority').text,
-			'Labels': topic.find('Labels').text
+			'Labels': topic.find('Labels').text,
+			'comments': []
 		}
+
+		comments = root.findall('Comment')
+		for comment in comments:
+			comment_data = {
+				'Author': comment.find('Author').text,
+				'Comment': comment.find('Comment').text,
+				'Status': comment.find('Status').text
+			}
+			markup['comments'].append(comment_data)
+
 		return markup if markup else None
 
 	@staticmethod

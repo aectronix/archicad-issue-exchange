@@ -125,12 +125,12 @@ class SpeckleWrapper():
 		data = self.query(query_str, variables)
 		return data["data"] if data and "data" in data else None
 
-	def create_comment(self, projectId, title, modelId, cameraPosition=[], cameraTarget=[], selectedObjectIds=[]):
+	def add_thread(self, projectId, title, modelId, cameraPosition=[], cameraTarget=[], selectedObjectIds=[]):
 		query_str = '''
 			mutation Create($input: CreateCommentInput!) {
 			  commentMutations {
 			    create(input: $input) {
-			      rawText
+			      id
 			    }
 			  }
 			}
@@ -148,6 +148,10 @@ class SpeckleWrapper():
 			            "content": [
 			              {
 			                "type": "text",
+	                    "marks": [
+	                      { "type": "bold" },
+	                      { "type": "underline" }
+	                    ],
 			                "text": title
 			              }
 			            ],
@@ -206,6 +210,42 @@ class SpeckleWrapper():
           }
 
 			  }
+		}
+
+		data = self.query(query_str, variables)
+		return data["data"] if data and "data" in data else None
+
+	def add_reply(self, threadId, message):
+		query_str = '''
+			mutation Reply($input: CreateCommentReplyInput!) {
+			  commentMutations {
+			    reply(input: $input) {
+			      id
+			    }
+			  }
+			}
+		'''
+
+		variables = {
+		  "input": {
+		    "threadId": threadId,
+		    "content": {
+		      "doc": {
+		        "type": "doc",
+		        "content": [
+		          {
+		            "type": "paragraph",
+		            "content": [
+		              {
+		                "type": "text",
+		                "text": message
+		              }
+		            ],
+		          }
+		        ],
+		      }
+		    },
+		  }
 		}
 
 		data = self.query(query_str, variables)
