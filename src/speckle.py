@@ -33,7 +33,7 @@ class SpeckleWrapper():
 			raise e
 
 
-	def gql_query(self, query, variables):
+	def query(self, query, variables):
 	    """
 	    Sends a GraphQL query to the Speckle server and returns the response.
 
@@ -49,7 +49,6 @@ class SpeckleWrapper():
 	    headers = {"Authorization": self.token, "Content-Type": "application/json"}
 
 	    response = requests.post(url, json=payload, headers=headers)
-	    print (response.content)
 	    return response.json() if response.status_code == 200 else None
 
 	def retrieve(self, streamId, commitId):
@@ -61,6 +60,47 @@ class SpeckleWrapper():
 			result = operations.receive(commit.referencedObject, self.transport)
 
 		return result
+
+	def search(self, projectId, objectId, applicationId):
+		query_str = '''
+			query Object($objectId: String!, $projectId: String!, $query: [JSONObject!], $select: [String]) {
+			  project(id: $projectId) {
+			    object(id: $objectId) {
+			      id
+			      speckleType
+			      children(query: $query, select: $select) {
+			        objects {
+			          id
+			          speckleType
+			          data
+			        }
+			      }
+			    }
+			  }
+			}
+		'''
+
+		variables = {
+		 "projectId": projectId,
+		  "objectId": objectId,
+		  "query": [
+		    {
+		      "field": "applicationId",
+		      "value": None,
+		      "operator": "<"
+		    },
+		    {
+		      "field": "applicationId",
+		      "value": applicationId,
+		      "operator": "="
+		    }
+		  ],
+		  "select": "applicationId",
+		}
+
+		data = self.query(query_str, variables)
+		return data['data']['project']['object']['children']['objects'] if data and 'data' in data else None
+
 
 	def get_comments(self, stream):
 		query = gql(
@@ -82,7 +122,7 @@ class SpeckleWrapper():
 			}"""
 		)
 
-		data = self.gql_query(query_str, variables)
+		data = self.query(query_str, variables)
 		return data["data"] if data and "data" in data else None
 
 	def create_comment(self, projectId, title, modelId, cameraPosition=[], cameraTarget=[], selectedObjectIds=[]):
@@ -168,7 +208,7 @@ class SpeckleWrapper():
 			  }
 		}
 
-		data = self.gql_query(query_str, variables)
+		data = self.query(query_str, variables)
 		return data["data"] if data and "data" in data else None
 
 
